@@ -1,7 +1,13 @@
 import { UpstashRedisAdapter } from '@next-auth/upstash-redis-adapter';
+import bcrypt from 'bcryptjs';
 import { NextAuthOptions, User } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { db } from './db';
+
+interface Credentials {
+	email: string;
+	password: string;
+}
 
 export const authOptions: NextAuthOptions = {
 	adapter: UpstashRedisAdapter(db),
@@ -9,7 +15,31 @@ export const authOptions: NextAuthOptions = {
 		Credentials({
 			name: 'credentials',
 			credentials: {},
-			async authorize(credentials, req) {},
+			async authorize(credentials) {
+				const { email, password } = credentials as Credentials;
+
+				try {
+					const dbUserID = (await db.get(`user:email:${email}`)) as string;
+					// console.log(dbUserID);
+					if (!dbUserID) {
+						return null;
+					}
+
+					const dbUser = (await db.get(`user:${dbUserID}`)) as any;
+					if (!dbUser) {
+						return null;
+					}
+
+					const doesPasswordMatch = await bcrypt.compare(password, dbUser.password);
+					if (!doesPasswordMatch) {
+						return null;
+					}
+
+					return dbUser;
+				} catch (error) {
+					console.log(error);
+				}
+			},
 		}),
 	],
 	session: {
@@ -17,7 +47,7 @@ export const authOptions: NextAuthOptions = {
 	},
 	secret: process.env.NEXTAUTH_SECRET,
 	pages: {
-		signIn: '/signin',
+		signIn: '/login',
 	},
 	callbacks: {
 		async jwt({ token, user }) {
@@ -42,9 +72,6 @@ export const authOptions: NextAuthOptions = {
 			}
 
 			return session;
-		},
-		redirect() {
-			return '/';
 		},
 	},
 };

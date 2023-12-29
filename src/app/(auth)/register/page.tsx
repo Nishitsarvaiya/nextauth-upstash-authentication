@@ -1,9 +1,10 @@
 'use client';
 
-import { z } from 'zod';
-import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 const validationSchema = z
 	.object({
@@ -30,7 +31,27 @@ export default function page() {
 		resolver: zodResolver(validationSchema),
 	});
 
-	const onSubmit: SubmitHandler<ValidationSchema> = (data) => console.log(data);
+	const router = useRouter();
+
+	const onSubmit: SubmitHandler<ValidationSchema> = async (data) => {
+		try {
+			const res = await fetch('/api/register', {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+				},
+				body: JSON.stringify({
+					...data,
+				}),
+			});
+
+			if (res.ok) {
+				router.replace('/login');
+			}
+		} catch (error) {
+			console.log(error);
+		}
+	};
 
 	return (
 		<main>

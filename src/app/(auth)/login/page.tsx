@@ -1,9 +1,12 @@
 'use client';
 
-import { z } from 'zod';
-import { SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { redirect, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 const validationSchema = z.object({
 	email: z.string().min(1, { message: 'Please enter your email' }).email({
@@ -15,6 +18,7 @@ const validationSchema = z.object({
 type ValidationSchema = z.infer<typeof validationSchema>;
 
 export default function page() {
+	const router = useRouter();
 	const {
 		register,
 		handleSubmit,
@@ -22,17 +26,29 @@ export default function page() {
 	} = useForm<ValidationSchema>({
 		resolver: zodResolver(validationSchema),
 	});
+	const [loginError, setLoginError] = useState('');
 
-	const onSubmit: SubmitHandler<ValidationSchema> = (data) => console.log(data);
+	const onSubmit: SubmitHandler<ValidationSchema> = async (data) => {
+		const res = await signIn('credentials', { ...data, redirect: false })
+			.then((res) => {
+				if (res?.error) {
+					setLoginError('Invalid Credentials');
+					return;
+				} else {
+					router.replace('/');
+				}
+			})
+			.catch((error) => console.log(error));
+	};
 
 	return (
 		<main>
 			<section>
 				<div className='flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0'>
-					<div className='w-full rounded-3xl shadow dark:border md:mt-0 sm:max-w-md xl:p-0  dark:border-gray-700'>
+					<div className='bg-white w-full rounded-3xl shadow-2xl dark:border md:mt-0 sm:max-w-md xl:p-0  dark:border-gray-700'>
 						<div className='p-6 space-y-4 md:space-y-6 sm:p-8'>
 							<h1 className='text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white'>
-								Create an account
+								Sign in to your account
 							</h1>
 							<form className='space-y-4 md:space-y-6' onSubmit={handleSubmit(onSubmit)}>
 								<div>
@@ -70,12 +86,13 @@ export default function page() {
 										<p className='text-sm text-red-400 mt-2'> {errors.password?.message}</p>
 									)}
 								</div>
+								{loginError && <p className='text-base text-red-400 mt-2'> {loginError}</p>}
 
 								<button
 									type='submit'
-									className='w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-base p-4 text-center dark:bg-white dark:hover:bg-indigo-600 dark:hover:text-white dark:focus:ring-primary-800 dark:text-slate-700 duration-200'
+									className='w-full text-white bg-indigo-600 hover:bg-indigio-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-base p-4 text-center dark:bg-white dark:hover:bg-indigo-600 dark:hover:text-white dark:focus:ring-primary-800 dark:text-slate-700 duration-200'
 								>
-									Login
+									Sign in
 								</button>
 								<p className='text-sm font-light text-gray-500 dark:text-gray-400'>
 									Don't have an account?{' '}

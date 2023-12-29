@@ -1,9 +1,21 @@
-import Image from 'next/image';
+import { authOptions } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
+import SignOutButton from './SignOutButton';
 
-export default function Home() {
+export default async function Home() {
+	const session = await getServerSession(authOptions);
+
+	if (!session) redirect('/login');
 	return (
 		<main className='h-screen'>
-			<div className="absolute top-0 left-0 w-full h-full flex place-items-center before:absolute before:h-[50vw] before:w-[60vw] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-a2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blura-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]"></div>
+			<div className='h-full'>
+				<div className='w-full h-full flex flex-col items-center justify-center'>
+					<h1 className='font-semibold text-6xl mb-4'>{session.user?.name}</h1>
+					<h3 className='text-xl mb-4'>{session.user?.email}</h3>
+					<SignOutButton />
+				</div>
+			</div>
 		</main>
 	);
 }
